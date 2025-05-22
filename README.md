@@ -4,7 +4,7 @@
 ---
 ## Introduction
 
-This business is a financial institution that helps people save and invest money. There are three big database that stores the list of users (like a contacts list),
+The business is a financial institution that helps people save and invest money. There are three big database that stores the list of users (like a contacts list),
 list of their savings accounts, and list of their investment plans. This report identifies customers who have both a savings and an investment plan (cross-selling opportunity).
 This project generates a complete financial summary report for users based on their savings and investment records stored across multiple relational database tables.
 
@@ -69,24 +69,23 @@ FROM plans_plan
 WHERE is_fixed_investment = 1
 GROUP BY owner_id;
 ```
+4. **Handling Missing Data with COALESCE**
+Step 4:  I add up total confirmed savings the user has plus the total investment amount.
+But again, either of those might be missing (NULL), especially if the user only saved or only invested.
+So I used `COALESCE(..., 0)`
 
+```
+COALESCE(savings_summary.savings_count, 0) AS savings_count,
+COALESCE(investment_summary.investment_count, 0) AS investment_count,
+COALESCE(savings_summary.total_savings, 0) + COALESCE(investment_summary.total_investment, 0) AS total_deposits
+```
 
-4. **Join all pieces together**
-I join the users_customuser with the savings summary and the investment summary.
-This creates one complete row per user with all the information I need. I Left-joined the savings and investment summaries to the users_customuser 
-   - Used `COALESCE` to convert NULLs into 0 for users without records.
+5. **Join all pieces together**
+I join the users_customuser's savings summary with savings_savingsaccount.
+This creates one complete row per user with all the information I need.
+I Left-joined the savings and investment summaries to the users_customuser.
 
----
-
-## 🧾 SQL Query
-
-```sql
-SELECT 
-    adashi_staging.users_customuser.owner_id AS owner_id,
-    adashi_staging.users_customuser.email AS name,
-    COALESCE(savings_summary.savings_count, 0) AS savings_count,
-    COALESCE(investment_summary.investment_count, 0) AS investment_count,
-    COALESCE(savings_summary.total_savings, 0) + COALESCE(investment_summary.total_investment, 0) AS total_deposits
+```
 FROM 
     adashi_staging.users_customuser
 
@@ -99,7 +98,12 @@ LEFT JOIN (
     GROUP BY owner_id
 ) AS savings_summary
 ON adashi_staging.users_customuser.owner_id = savings_summary.owner_id
+```
 
+Also, I left-join the staging.plans_plan's investment summary and savings_savingsaccount.
+This creates one complete row per user with all the information I need.
+
+```
 LEFT JOIN (
     SELECT 
         owner_id,
@@ -110,14 +114,34 @@ LEFT JOIN (
     GROUP BY owner_id
 ) AS investment_summary
 ON adashi_staging.users_customuser.owner_id = investment_summary.owner_id;
+```
+---
 
+## Challenges I Faced — And How I Solved Them:
+1. Unclear Column Names
+Problem: At first, I assumed the user table had columns like id, name, first_name.
+Fix: I asked you to share the actual column names. Once we saw that the user table used owner_id and email, I adjusted the query accordingly.
 
+2. Missing Data (Null values)
+Problem: Some users might not have any savings or investments, which would return "nothing" instead of 0.
 
+Fix: I used a function called COALESCE() in SQL, which means: “if this value is missing, just show 0 instead.”
 
+3. Joining Different Tables
+Problem: It’s tricky to combine savings and investment data because each user could have multiple records.
 
+Fix: I created summary tables that:
+
+Counted savings and summed deposits per user
+
+Counted investments and summed amounts per user
+Then I joined these summaries back to the main user list.
+
+---
+
+## Detailed Line By Line Explanation of Query
 
 ```
---- Select user info along with savings count, investment count, and total deposits
 SELECT 
     adashi_staging.users_customuser.owner_id AS owner_id,  -- The correct column to use for identifying users for the three tables is owner_id. I selected owner_id from the users_customuser 
                                                               table as a unique identifier for each user.
@@ -166,5 +190,43 @@ LEFT JOIN (
     GROUP BY owner_id
 ) AS savings_summary
 ON adashi_staging.users_customuser.owner_id = savings_summary.owner_id
+
+---
+
+```
+## **Single SQL Query**
+
+SELECT 
+    adashi_staging.users_customuser.owner_id AS owner_id,
+    adashi_staging.users_customuser.email AS name,
+    COALESCE(savings_summary.savings_count, 0) AS savings_count,
+    COALESCE(investment_summary.investment_count, 0) AS investment_count,
+    COALESCE(savings_summary.total_savings, 0) + COALESCE(investment_summary.total_investment, 0) AS total_deposits
+FROM 
+    adashi_staging.users_customuser
+
+LEFT JOIN (
+    SELECT 
+        owner_id,
+        COUNT(*) AS savings_count,
+        SUM(confirmed_amount) AS total_savings
+    FROM adashi_staging.savings_savingsaccount
+    GROUP BY owner_id
+) AS savings_summary
+ON adashi_staging.users_customuser.owner_id = savings_summary.owner_id
+
+LEFT JOIN (
+    SELECT 
+        owner_id,
+        COUNT(*) AS investment_count,
+        SUM(amount) AS total_investment
+    FROM adashi_staging.plans_plan
+    WHERE is_fixed_investment = 1
+    GROUP BY owner_id
+) AS investment_summary
+ON adashi_staging.users_customuser.owner_id = investment_summary.owner_id;
+
+
+
 
 
