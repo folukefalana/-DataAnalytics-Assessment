@@ -193,9 +193,8 @@ ON adashi_staging.users_customuser.owner_id = savings_summary.owner_id
 
 ---
 
-```
 ## **Single SQL Query**
-
+```
 SELECT 
     adashi_staging.users_customuser.owner_id AS owner_id,
     adashi_staging.users_customuser.email AS name,
@@ -225,7 +224,7 @@ LEFT JOIN (
     GROUP BY owner_id
 ) AS investment_summary
 ON adashi_staging.users_customuser.owner_id = investment_summary.owner_id;
-
+```
 
 
 
