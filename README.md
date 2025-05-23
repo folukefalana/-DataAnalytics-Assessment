@@ -26,7 +26,7 @@ In modern fintech systems, customer data is often distributed across multiple da
 - Investment plans in `plans_plan`
 ---
 
-## 🛠️ Methodology
+## Methodology
 
 1. **Start with the users table,`users_customuser`**  
 Step 1: Start with a list of all users 'adashi_staging.users_customuser'
@@ -119,25 +119,25 @@ ON adashi_staging.users_customuser.owner_id = investment_summary.owner_id;
 
 ## Challenges I Faced — And How I Solved Them:
 1. Unclear Column Names
-Problem: At first, I assumed the user table had columns like id, name, first_name.
-Fix: I asked you to share the actual column names. Once we saw that the user table used owner_id and email, I adjusted the query accordingly.
+   Problem: At first, I assumed the user table had columns like id, name, first_name.
+   Fix: I asked you to share the actual column names. Once we saw that the user table used owner_id and email, I adjusted the query accordingly.
 
 2. Missing Data (Null values)
-Problem: Some users might not have any savings or investments, which would return "nothing" instead of 0.
+   Problem: Some users might not have any savings or investments, which would return "nothing" instead of 0.
 
-Fix: I used a function called COALESCE() in SQL, which means: “if this value is missing, just show 0 instead.”
+   Fix: I used a function called COALESCE() in SQL, which means: “if this value is missing, just show 0 instead.”
 
 3. Joining Different Tables
-Problem: It’s tricky to combine savings and investment data because each user could have multiple records.
+   Problem: It’s tricky to combine savings and investment data because each user could have multiple records.
 
-Fix: I created summary tables that:
+   Fix: I created summary tables that:
 
-Counted savings and summed deposits per user
+   Counted savings and summed deposits per user
 
-Counted investments and summed amounts per user
-Then I joined these summaries back to the main user list.
-
+   Counted investments and summed amounts per user
+   Then I joined these summaries back to the main user list.
 ---
+
 ## Single SQL Query
 ```
 SELECT 
