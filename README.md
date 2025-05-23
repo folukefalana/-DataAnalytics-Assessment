@@ -138,7 +138,38 @@ Counted investments and summed amounts per user
 Then I joined these summaries back to the main user list.
 
 ---
+## Single SQL Query
+```
+SELECT 
+    adashi_staging.users_customuser.owner_id AS owner_id,
+    adashi_staging.users_customuser.email AS name,
+    COALESCE(savings_summary.savings_count, 0) AS savings_count,
+    COALESCE(investment_summary.investment_count, 0) AS investment_count,
+    COALESCE(savings_summary.total_savings, 0) + COALESCE(investment_summary.total_investment, 0) AS total_deposits
+FROM 
+    adashi_staging.users_customuser
 
+LEFT JOIN (
+    SELECT 
+        owner_id,
+        COUNT(*) AS savings_count,
+        SUM(confirmed_amount) AS total_savings
+    FROM adashi_staging.savings_savingsaccount
+    GROUP BY owner_id
+) AS savings_summary
+ON adashi_staging.users_customuser.owner_id = savings_summary.owner_id
+
+LEFT JOIN (
+    SELECT 
+        owner_id,
+        COUNT(*) AS investment_count,
+        SUM(amount) AS total_investment
+    FROM adashi_staging.plans_plan
+    WHERE is_fixed_investment = 1
+    GROUP BY owner_id
+) AS investment_summary
+ON adashi_staging.users_customuser.owner_id = investment_summary.owner_id;
+```
 ## Detailed Line By Line Explanation of Query
 
 ```
@@ -191,40 +222,6 @@ LEFT JOIN (
 ) AS savings_summary
 ON adashi_staging.users_customuser.owner_id = savings_summary.owner_id
 
----
-
-## **Single SQL Query**
-```
-SELECT 
-    adashi_staging.users_customuser.owner_id AS owner_id,
-    adashi_staging.users_customuser.email AS name,
-    COALESCE(savings_summary.savings_count, 0) AS savings_count,
-    COALESCE(investment_summary.investment_count, 0) AS investment_count,
-    COALESCE(savings_summary.total_savings, 0) + COALESCE(investment_summary.total_investment, 0) AS total_deposits
-FROM 
-    adashi_staging.users_customuser
-
-LEFT JOIN (
-    SELECT 
-        owner_id,
-        COUNT(*) AS savings_count,
-        SUM(confirmed_amount) AS total_savings
-    FROM adashi_staging.savings_savingsaccount
-    GROUP BY owner_id
-) AS savings_summary
-ON adashi_staging.users_customuser.owner_id = savings_summary.owner_id
-
-LEFT JOIN (
-    SELECT 
-        owner_id,
-        COUNT(*) AS investment_count,
-        SUM(amount) AS total_investment
-    FROM adashi_staging.plans_plan
-    WHERE is_fixed_investment = 1
-    GROUP BY owner_id
-) AS investment_summary
-ON adashi_staging.users_customuser.owner_id = investment_summary.owner_id;
-```
 
 
 
