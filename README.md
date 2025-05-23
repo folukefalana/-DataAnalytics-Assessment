@@ -3,6 +3,7 @@
 ## Assessment_Q1.sql
 ---
 ## Introduction
+**High-Value Customers with Multiple Products**
 
 The business is a financial institution that helps people save and invest money. There are three big database that stores the list of users (like a contacts list),
 list of their savings accounts, and list of their investment plans. This report identifies customers who have both a savings and an investment plan (cross-selling opportunity).
@@ -16,9 +17,7 @@ The objective is to make a single report that shows for each user:
 - Number of savings accounts
 - Number of investment plans
 - Total amount of confirmed savings and investments
-
 ---
-
 ## Dataset Distribution
 In modern fintech systems, customer data is often distributed across multiple database tables. The database stores:
 - User data in `users_customuser`
@@ -31,7 +30,6 @@ In modern fintech systems, customer data is often distributed across multiple da
 1. **Start with the users table,`users_customuser`**  
 Step 1: Start with a list of all users 'adashi_staging.users_customuser'
 I begin with the user table. This gives me: A unique ID (called owner_id).Their email (since there is no name column in the three tables)
-
 ```
 SELECT 
     adashi_staging.users_customuser.owner_id AS owner_id;
@@ -54,12 +52,10 @@ SELECT
 FROM adashi_staging.savings_savingsaccount
 GROUP BY owner_id
 ```
-
 3. **Build an investment summary subquery**  
 Step 3: Select the investment table 'plans_plan'
 I counted how many fixed investment plans they have and how much total money they’ve invested
 Again, I build a small summary for this.
-
 ```
 SELECT 
     owner_id,
@@ -73,7 +69,6 @@ GROUP BY owner_id;
 Step 4:  I add up total confirmed savings the user has plus the total investment amount.
 But again, either of those might be missing (NULL), especially if the user only saved or only invested.
 So I used `COALESCE(..., 0)`
-
 ```
 COALESCE(savings_summary.savings_count, 0) AS savings_count,
 COALESCE(investment_summary.investment_count, 0) AS investment_count,
@@ -84,7 +79,6 @@ COALESCE(savings_summary.total_savings, 0) + COALESCE(investment_summary.total_i
 I join the users_customuser's savings summary with savings_savingsaccount.
 This creates one complete row per user with all the information I need.
 I Left-joined the savings and investment summaries to the users_customuser.
-
 ```
 FROM 
     adashi_staging.users_customuser
@@ -116,7 +110,6 @@ LEFT JOIN (
 ON adashi_staging.users_customuser.owner_id = investment_summary.owner_id;
 ```
 ---
-
 ## Challenges I Faced — And How I Solved Them:
 1. Unclear Column Names
    Problem: At first, I assumed the user table had columns like id, name, first_name.
@@ -186,7 +179,6 @@ SELECT
 FROM 
     adashi_staging.users_customuser  -- Main user table
 
-
 LEFT JOIN (        -- I am now joining savings data to each user even if they have no savings.
     SELECT 
         owner_id,  -- Grouped user reference from the savings table
@@ -196,7 +188,6 @@ LEFT JOIN (        -- I am now joining savings data to each user even if they ha
     GROUP BY owner_id  --  GROUP BY owner_id groups the results so we get one row per user.
 ) AS savings_summary
 ON adashi_staging.users_customuser.owner_id = savings_summary.owner_id  --  I name the summary savings_summary, and match it to users by comparing their owner_id.
-
 
 LEFT JOIN (  --- I join investment data to users — again using LEFT JOIN so users without investments still appear.
 
@@ -210,7 +201,6 @@ SELECT
     GROUP BY owner_id  -- Aggregate by user
 ) AS investment_summary
 ON adashi_staging.users_customuser.owner_id = investment_summary.owner_id;  -- Join condition: match user ID with investment records
-
 ```
 LEFT JOIN (
     SELECT 
